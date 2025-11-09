@@ -3,27 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vokabeltrainer</title>
+    <title>Vokabeltrainer mit Sets</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <header>
-        <h1>🧠 Vokabeltrainer</h1>
+        <h1>🧠 Vokabeltrainer mit Sets</h1>
     </header>
 
     <main>
+        <div id="set-selection">
+            <h2>Aktiver Vokabel-Set</h2>
+            <select id="set-select"></select>
+            <button id="add-set-btn">➕ Neues Set</button>
+        </div>
+
         <div class="card-container" id="card-container">
             <div class="flashcard" id="flashcard">
                 <div class="flashcard-face front">
                     <span id="card-word">Laden...</span>
                 </div>
-
                 <div class="flashcard-face back">
                     <p id="card-translation">Laden...</p>
                     <img id="card-image" src="" alt="Vokabelbild">
                 </div>
             </div>
+            <button id="delete-card-btn" disabled>🗑️ Löschen</button>
         </div>
         
         <div id="controls">
@@ -35,7 +41,7 @@
         </div>
 
         <div id="word-input-section">
-            <h2>➕ Neue Vokabel hinzufügen</h2>
+            <h2>➕ Vokabel hinzufügen (Set: <span id="current-set-name">Laden...</span>)</h2>
             <form id="add-word-form">
                 <input type="text" id="new-word" required placeholder="Wort (Vorderseite)">
                 <input type="text" id="new-translation" required placeholder="Übersetzung (Rückseite)">
