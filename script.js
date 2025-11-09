@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const LOCAL_STORAGE_KEY = 'vokabeltrainer_cards';
+    // Schlüssel für den Local Storage
+    const LOCAL_STORAGE_KEY = 'vokabeltrainer_sets';
 
     // DOM-Elemente
     const flashcard = document.getElementById('flashcard');
@@ -7,123 +8,161 @@ document.addEventListener('DOMContentLoaded', () => {
     const cardTranslation = document.getElementById('card-translation');
     const cardImage = document.getElementById('card-image');
     const cardCounter = document.getElementById('card-counter');
-    
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
+    const deleteCardBtn = document.getElementById('delete-card-btn'); // NEU
     
     const addWordForm = document.getElementById('add-word-form');
     const newWordInput = document.getElementById('new-word');
     const newTranslationInput = document.getElementById('new-translation');
     const imageUploadInput = document.getElementById('image-upload');
     const imageStatus = document.getElementById('image-status');
+    const currentSetName = document.getElementById('current-set-name'); // NEU
+    
+    const setSelect = document.getElementById('set-select'); // NEU
+    const addSetBtn = document.getElementById('add-set-btn'); // NEU
     
     // Anwendungsstatus
-    let cards = [];
+    let allSets = {}; // Format: { 'Set-Name': [{ id: 1, word: '...', translation: '...', image: '...' }], ... }
+    let currentSetNameKey = 'Standard'; // Aktueller Set-Name
+    let currentCards = []; // Vokabeln des aktuell ausgewählten Sets
     let currentCardIndex = 0;
     let currentBase64Image = null; // Für das temporär hochgeladene Bild
 
-    // --- Funktionen zum Laden und Speichern ---
+    // --- Core Funktionen ---
 
-    /** Lädt Vokabeln aus dem Local Storage. */
-    function loadCards() {
-        const storedCards = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (storedCards) {
-            cards = JSON.parse(storedCards);
-        } else {
-            // Start-Vokabel, falls der Speicher leer ist
-            cards = [{
-                word: "Hund",
-                translation: "Ein vierbeiniges Haustier",
-                image: null
-            }];
+    /** Lädt alle Sets aus dem Local Storage. */
+    function loadSets() {
+        const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (storedData) {
+            allSets = JSON.parse(storedData);
         }
-        if (cards.length > 0) {
-            currentCardIndex = 0;
+        
+        // Sicherstellen, dass mindestens ein "Standard"-Set existiert
+        if (Object.keys(allSets).length === 0) {
+            allSets[currentSetNameKey] = [];
         }
+
+        // Letzten Set-Namen speichern/laden
+        const lastSet = localStorage.getItem('last_set_key');
+        if (lastSet && allSets[lastSet]) {
+            currentSetNameKey = lastSet;
+        }
+
+        populateSetSelect();
+        loadCurrentSet();
+    }
+
+    /** Speichert alle Sets im Local Storage. */
+    function saveSets() {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allSets));
+        localStorage.setItem('last_set_key', currentSetNameKey);
+    }
+
+    // --- Set Management Funktionen ---
+    
+    /** Befüllt das Dropdown mit allen Set-Namen. */
+    function populateSetSelect() {
+        setSelect.innerHTML = '';
+        Object.keys(allSets).forEach(setKey => {
+            const option = document.createElement('option');
+            option.value = setKey;
+            option.textContent = `${setKey} (${allSets[setKey].length})`;
+            setSelect.appendChild(option);
+        });
+        setSelect.value = currentSetNameKey;
+    }
+
+    /** Lädt die Vokabeln des aktuell ausgewählten Sets. */
+    function loadCurrentSet() {
+        currentCards = allSets[currentSetNameKey] || [];
+        currentCardIndex = 0;
+        currentSetName.textContent = currentSetNameKey;
         updateCardDisplay();
     }
 
-    /** Speichert Vokabeln im Local Storage. */
-    function saveCards() {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cards));
+    // --- Löschen Funktion (NEU) ---
+
+    /** Löscht die aktuell angezeigte Vokabel. */
+    function deleteCurrentCard() {
+        if (currentCards.length === 0) return;
+
+        const cardToDelete = currentCards[currentCardIndex];
+        
+        if (!confirm(`Soll die Vokabel "${cardToDelete.word}" wirklich gelöscht werden?`)) {
+            return;
+        }
+
+        // Verwenden von Array.filter() zum Entfernen der Karte
+        // Wir filtern alle Karten heraus, deren ID NICHT der ID der zu löschenden Karte entspricht
+        allSets[currentSetNameKey] = currentCards.filter(card => card.id !== cardToDelete.id);
+        currentCards = allSets[currentSetNameKey];
+        saveSets();
+
+        // Index anpassen, falls die letzte Karte gelöscht wurde
+        if (currentCardIndex >= currentCards.length && currentCardIndex > 0) {
+            currentCardIndex--;
+        }
+
+        populateSetSelect(); // Set-Anzahl aktualisieren
+        updateCardDisplay(); // Anzeige aktualisieren
     }
 
-    // --- Anzeige- und Navigations-Funktionen ---
+    // --- Anzeige und Navigation (Angepasst) ---
     
-    /** * Bestimmt, welche Seite vorne angezeigt wird (Wort oder Bild/Beschreibung).
-     * @param {Object} card - Die aktuelle Karte.
-     */
+    // Die setCardFace Funktion bleibt unverändert
     function setCardFace(card) {
-        // 50/50 Chance, welche Seite zuerst angezeigt wird (0 = Wort, 1 = Bild/Text)
         const mode = Math.floor(Math.random() * 2); 
         
         if (mode === 0 || !card.image) { 
-            // Modus 0 (Standard) ODER es gibt kein Bild: Wort ist Frage (Vorderseite)
             cardWord.innerHTML = `<span>${card.word}</span>`;
             cardTranslation.innerHTML = `<span>${card.translation}</span>`;
-            
-            // Bild wird auf der Rückseite angezeigt, falls vorhanden
             cardImage.src = card.image || ""; 
             cardImage.style.display = card.image ? 'block' : 'none';
-
-            // Visuelle Anpassung (Klasse entfernen, um Wort-Frage hervorzuheben)
             flashcard.classList.remove('reverse-mode'); 
             
         } else {
-            // Modus 1: Bild/Beschreibung ist Frage (Vorderseite)
-            
-            // Vorderseite (Frage): Bild und/oder Beschreibung
             cardWord.innerHTML = card.image 
                 ? `<img src="${card.image}" alt="Fragebild" class="front-image">`
-                : `<span>${card.translation}</span>`; // Wenn nur Text, diesen als Frage nehmen
-
-            // Rückseite (Antwort): Das Wort
+                : `<span>${card.translation}</span>`;
             cardTranslation.innerHTML = `<span class="answer-word">${card.word}</span>`;
-            cardImage.src = ""; // Auf der Antwort-Seite kein zusätzliches Bild
+            cardImage.src = "";
             cardImage.style.display = 'none';
-
-            // Visuelle Anpassung (Klasse hinzufügen, um Bild-Frage hervorzuheben)
             flashcard.classList.add('reverse-mode'); 
         }
     }
 
     /** Aktualisiert die angezeigte Karte und die Navigations-Buttons. */
     function updateCardDisplay() {
-        if (cards.length === 0) {
-            cardWord.textContent = "Keine Vokabeln vorhanden.";
+        if (currentCards.length === 0) {
+            cardWord.textContent = "Keine Vokabeln in diesem Set.";
             cardTranslation.textContent = "";
             cardImage.style.display = 'none';
             cardCounter.textContent = "0 / 0";
             prevBtn.disabled = true;
             nextBtn.disabled = true;
+            deleteCardBtn.disabled = true; // NEU: Löschen deaktivieren
             flashcard.classList.remove('flip', 'reverse-mode'); 
             return;
         }
 
-        const card = cards[currentCardIndex];
+        const card = currentCards[currentCardIndex];
+        setCardFace(card);
         
-        setCardFace(card); // Neue Logik für flexible Frage/Antwort
-        
-        // Counter aktualisieren
-        cardCounter.textContent = `${currentCardIndex + 1} / ${cards.length}`;
-        
-        // Navigations-Buttons aktualisieren
+        cardCounter.textContent = `${currentCardIndex + 1} / ${currentCards.length}`;
         prevBtn.disabled = currentCardIndex === 0;
-        nextBtn.disabled = currentCardIndex === cards.length - 1;
-
-        // Karte auf die Vorderseite drehen, wenn eine neue Vokabel geladen wird
+        nextBtn.disabled = currentCardIndex === currentCards.length - 1;
+        deleteCardBtn.disabled = false; // NEU: Löschen aktivieren
         flashcard.classList.remove('flip'); 
     }
 
-    /** Blättert zur nächsten Karte. */
     function nextCard() {
-        if (currentCardIndex < cards.length - 1) {
+        if (currentCardIndex < currentCards.length - 1) {
             currentCardIndex++;
             updateCardDisplay();
         }
     }
 
-    /** Blättert zur vorherigen Karte. */
     function prevCard() {
         if (currentCardIndex > 0) {
             currentCardIndex--;
@@ -133,26 +172,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Listener ---
 
-    // 1. Karte umdrehen
+    // 1. Set-Auswahl ändern
+    setSelect.addEventListener('change', (e) => {
+        currentSetNameKey = e.target.value;
+        loadCurrentSet();
+        saveSets(); // Speichert den letzten ausgewählten Set-Namen
+    });
+
+    // 2. Neues Set hinzufügen
+    addSetBtn.addEventListener('click', () => {
+        const newSetName = prompt("Geben Sie einen Namen für das neue Vokabel-Set ein:");
+        if (newSetName && newSetName.trim() !== "") {
+            const cleanName = newSetName.trim();
+            if (allSets[cleanName]) {
+                alert("Ein Set mit diesem Namen existiert bereits!");
+                return;
+            }
+            allSets[cleanName] = [];
+            currentSetNameKey = cleanName;
+            saveSets();
+            populateSetSelect();
+            loadCurrentSet();
+        }
+    });
+
+    // 3. Karte umdrehen
     flashcard.addEventListener('click', () => {
         flashcard.classList.toggle('flip');
     });
 
-    // 2. Navigation
+    // 4. Navigation
     nextBtn.addEventListener('click', nextCard);
     prevBtn.addEventListener('click', prevCard);
 
-    // 3. Bild hochladen und in Base64 umwandeln
+    // 5. Karte löschen
+    deleteCardBtn.addEventListener('click', deleteCurrentCard); // NEU
+
+    // 6. Bild hochladen und in Base64 umwandeln (unverändert)
     imageUploadInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (file) {
             const reader = new FileReader();
-            
             reader.onload = (e) => {
                 currentBase64Image = e.target.result;
                 imageStatus.textContent = `Bild ausgewählt: ${file.name}`;
             };
-            
             reader.readAsDataURL(file);
         } else {
             currentBase64Image = null;
@@ -160,11 +224,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 4. Formular zum Hinzufügen einer Vokabel
+    // 7. Formular zum Hinzufügen einer Vokabel (angepasst)
     addWordForm.addEventListener('submit', (event) => {
         event.preventDefault();
 
         const newCard = {
+            // Eindeutige ID (Zeitstempel ist gut genug für Local Storage)
+            id: Date.now(), 
             word: newWordInput.value.trim(),
             translation: newTranslationInput.value.trim(),
             image: currentBase64Image 
@@ -175,10 +241,14 @@ document.addEventListener('DOMContentLoaded', () => {
              return;
         }
 
-        cards.push(newCard);
-        saveCards(); 
+        allSets[currentSetNameKey].push(newCard); // Zum aktuellen Set hinzufügen
+        saveSets(); 
         
-        currentCardIndex = cards.length - 1; 
+        // Zur neu hinzugefügten Karte navigieren
+        currentCards = allSets[currentSetNameKey];
+        currentCardIndex = currentCards.length - 1; 
+        
+        populateSetSelect(); // Set-Anzahl aktualisieren
         updateCardDisplay();
 
         // Formular zurücksetzen
@@ -188,5 +258,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Anwendung starten
-    loadCards();
+    loadSets();
 });
