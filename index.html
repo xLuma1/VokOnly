@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vokabeltrainer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>🧠 Vokabeltrainer</h1>
+    </header>
+
+    <main>
+        <div class="card-container" id="card-container">
+            <div class="flashcard" id="flashcard">
+                <div class="flashcard-face front">
+                    <span id="card-word">Laden...</span>
+                </div>
+
+                <div class="flashcard-face back">
+                    <p id="card-translation">Laden...</p>
+                    <img id="card-image" src="" alt="Vokabelbild">
+                </div>
+            </div>
+        </div>
+        
+        <div id="controls">
+            <span id="card-counter">0 / 0</span>
+            <div class="buttons">
+                <button id="prev-btn" disabled>← Zurück</button>
+                <button id="next-btn" disabled>Nächste →</button>
+            </div>
+        </div>
+
+        <div id="word-input-section">
+            <h2>➕ Neue Vokabel hinzufügen</h2>
+            <form id="add-word-form">
+                <input type="text" id="new-word" required placeholder="Wort (Vorderseite)">
+                <input type="text" id="new-translation" required placeholder="Übersetzung (Rückseite)">
+                <label for="image-upload" class="file-label">Bild vom Gerät hochladen</label>
+                <input type="file" id="image-upload" accept="image/*" class="hidden-file-input">
+                <button type="submit">Vokabel speichern</button>
+            </form>
+            <p id="image-status">Kein Bild ausgewählt.</p>
+        </div>
+    </main>
+    
+    <script src="script.js"></script>
+</body>
+</html>
