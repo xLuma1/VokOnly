@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vokabeltrainer (V8: Umfangreiche Set-Bibliothek)</title>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+        
+        :root {
+            --primary-color: #673AB7; /* Tiefes Violett */
+            --secondary-color: #FFC107; /* Akzent Gelb */
+            --success-color: #4CAF50; /* Grün */
+            --danger-color: #F44336; /* Rot */
+            --background-color: #f0f3f5;
+            --card-background: #ffffff;
+            --text-color: #263238;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: var(--background-color);
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text-color);
+        }
+        h1 { 
+            color: var(--primary-color); 
+            margin-bottom: 20px; 
+            font-weight: 700; 
+            border-bottom: 3px solid var(--secondary-color); 
+            padding-bottom: 5px;
+            text-align: center;
+        }
+        h2 { color: var(--primary-color); margin-top: 0; font-weight: 600; }
+        h3 { color: var(--text-color); margin-top: 20px; font-weight: 600; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .verborgen { display: none !important; }
+
+        /* --- Tabs / Reiter System --- */
+        #tab-container {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ccc;
+        }
+        .tab-button {
+            flex-grow: 1;
+            padding: 12px 0;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            color: #90A4AE;
+            background: none;
+            border: none;
+            border-bottom: 4px solid transparent;
+            transition: color 0.2s, border-bottom-color 0.2s;
+            font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tab-button.aktiv {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        /* Hauptinhalts-Container */
+        #main-content {
+            width: 100%;
+            max-width: 450px;
+            padding: 0;
+        }
+
+        /* Set-Auswahl Container */
+        #set-auswahl-container {
+            width: 100%;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            padding: 10px;
+            background: var(--card-background);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+        #set-selector {
+            flex-grow: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--primary-color);
+            font-size: 1em;
+            background-color: #ffffff;
+            color: var(--text-color);
+        }
+
+        /* Vokabel-Anzeige */
+        #vokabel-container {
+            background: linear-gradient(135deg, var(--card-background), #fafafa);
+            border-radius: 18px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            min-height: 200px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .vokabel-wort {
+            font-size: 2.8em;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+
+        /* Buttons & Gruppen */
+        .modus {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        button {
+            padding: 16px 20px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            width: 100%;
+            box-sizing: border-box;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        button:active { transform: scale(0.98); }
+        
+        #zeigen-button { background-color: var(--secondary-color); color: var(--text-color); }
+        .button-gruppe { display: flex; justify-content: space-between; gap: 10px; }
+        .button-gruppe button { flex-grow: 1; }
+        
+        .gut { background-color: var(--success-color); color: white; } 
+        .schlecht { background-color: var(--danger-color); color: white; } 
+
+        .wechsel-button { background-color: #B0BEC5; color: white; font-weight: 500; } 
+        
+        /* Quiz-Modus spezifisch */
+        #quiz-fragen-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .quiz-option-button {
+            background-color: #f1f1f1;
+            color: var(--text-color);
+            padding: 12px 20px;
+            font-weight: 500;
+            text-align: left;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .quiz-option-button.correct { background-color: var(--success-color); color: white; }
+        .quiz-option-button.wrong { background-color: var(--danger-color); color: white; }
+
+        /* Editor-Design */
+        #editor-modus {
+            width: 100%;
+            background-color: var(--card-background);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+        #set-name-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.2em;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            font-weight: 600;
+        }
+        .vokabel-eintrag {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .vokabel-eintrag input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        .vokabel-eintrag input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            flex-shrink: 0;
+        }
+        .vokabel-eintrag button {
+            background-color: #E0E0E0; 
+            color: #757575;
+            padding: 8px 12px;
+            box-shadow: none;
+            width: auto;
+            flex-grow: 0;
+        }
+
+        /* Set-Bibliothek Design */
+        #set-bibliothek-container {
+            margin-bottom: 30px;
+        }
+        #set-bibliothek {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #fafafa;
+            margin-top: 15px;
+        }
+        .bibliothek-set-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px dashed #eee;
+        }
+        .bibliothek-set-item:last-child { border-bottom: none; }
+        .bibliothek-set-item span { font-weight: 500; }
+        .bibliothek-set-item button {
+            width: auto;
+            padding: 8px 15px;
+            font-size: 0.9em;
+            box-shadow: none;
+        }
+        
+        @media (max-width: 480px) {
+            .button-gruppe { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📚 Vokabel-Trainer</h1>
+
+    <div id="set-auswahl-container">
+        <select id="set-selector"></select>
+        <button id="set-neu-button" class="gut">➕ Neues Set</button>
+    </div>
+
+    <div id="tab-container">
+        <button class="tab-button aktiv" data-modus="1" id="tab-karteikarte">Karteikarte</button>
+        <button class="tab-button" data-modus="2" id="tab-eingabefeld">Wort eingeben</button>
+        <button class="tab-button" data-modus="4" id="tab-quiz">Üben (Quiz)</button>
+        <button class="tab-button" data-modus="3" id="tab-editor">Set bearbeiten</button>
+    </div>
+    
+    <div id="main-content">
+        
+        <div id="vokabel-container">
+            <p id="wort-anzeige" class="vokabel-wort">Wählen Sie ein Set</p>
+            <p id="uebersetzung-anzeige" class="vokabel-wort verborgen"></p>
+        </div>
+
+        <div id="modus1" class="modus">
+            <button id="zeigen-button">Übersetzung zeigen</button>
+            <div id="feedback-buttons" class="button-gruppe verborgen">
+                <button id="wusste-ich-button" class="gut">✅ Wusste ich</button>
+                <button id="wusste-nicht-button" class="schlecht">❌ Wusste ich nicht</button>
+            </div>
+        </div>
+
+        <div id="modus2" class="modus verborgen">
+            <input type="text" id="eingabefeld" placeholder="Geben Sie die Übersetzung ein">
+            <button id="ueberpruefen-button">Überprüfen</button>
+            <p id="pruef-ergebnis" class="ergebnis"></p>
+            <button id="naechste-vokabel-button" class="wechsel-button verborgen">Nächste Vokabel</button>
+        </div>
+        
+        <div id="modus4" class="modus verborgen">
+            <h2 id="quiz-frage-wort">Wählen Sie die richtige Übersetzung für...</h2>
+            <div id="quiz-fragen-container">
+                </div>
+            <p id="quiz-pruef-ergebnis" class="ergebnis"></p>
+            <button id="quiz-naechste-button" class="wechsel-button verborgen">Nächste Vokabel</button>
+        </div>
+
+        <div id="editor-modus" class="modus verborgen">
+            
+            <div id="set-bibliothek-container">
+                <h3>📚 Set-Bibliothek (Vorgefertigte Sets)</h3>
+                <div id="set-bibliothek">
+                    </div>
+            </div>
+
+            <h2>Aktuelles Set bearbeiten:</h2>
+            <input type="text" id="set-name-input" placeholder="Name des aktuellen Sets">
+            
+            <h3>Vokabeln bearbeiten & auswählen:</h3>
+            <div id="vokabel-liste">
+                </div>
+            <button id="neue-vokabel-button" class="wechsel-button">➕ Neue Vokabel hinzufügen</button>
+            <div id="editor-buttons" class="modus">
+                <button id="editor-speichern" class="gut">Änderungen speichern & Set laden</button>
+                <button id="loesche-set-button" class="schlecht">Aktuelles Set löschen</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const STORAGE_KEY = 'vokabelSets_v8'; 
+        let alleSets = {};      
+        let aktuellesSet = [];  // Das aktuell geladene Set (mit allen Vokabeln)
+        let trainierbaresSet = []; // Nur die ausgewählten Vokabeln
+        let aktuellerSetName = ''; 
+        let aktuellerModus = 1;
+
+        // 1. DOM-Elemente
+        const [wortAnzeige, uebersetzungAnzeige, setSelector, modus1, modus2, editorModus, vokabelListe, zeigenButton, feedbackButtons, eingabefeld, ueberpruefenButton, pruefErgebnis, naechsteVokabelButton, setNameInput, modus4, quizFrageWort, quizFragenContainer, quizPruefErgebnis, quizNaechsteButton, setBibliothekContainer] = [
+            'wort-anzeige', 'uebersetzung-anzeige', 'set-selector', 'modus1', 'modus2', 'editor-modus', 'vokabel-liste', 'zeigen-button', 'feedback-buttons', 'eingabefeld', 'ueberpruefen-button', 'pruef-ergebnis', 'naechste-vokabel-button', 'set-name-input', 'modus4', 'quiz-frage-wort', 'quiz-fragen-container', 'quiz-pruef-ergebnis', 'quiz-naechste-button', 'set-bibliothek'
+        ].map(id => document.getElementById(id));
+        
+        let aktuelleVokabelIndex = -1;
+
+        // --- 1. SET-DEFINITIONEN (NEU & ERWEITERT) ---
+
+        /** Definiert die großen, vorgefertigten Sets. [Fremdwort, Übersetzung, true (default selected)] */
+        const VORDEFINIERTE_SETS = {
+            '🇩🇪 Anfänger-Grundlagen': [
+                ["der Tisch", "table", true], ["das Fenster", "window", true], ["die Tür", "door", true], 
+                ["rot", "red", true], ["blau", "blue", true], ["grün", "green", true],
+                ["groß", "big", true], ["klein", "small", true], ["schnell", "fast", true]
+            ],
+            '🍽️ Im Restaurant & Essen': [
+                ["die Rechnung", "the bill", true], ["die Speisekarte", "the menu", true], ["der Kellner", "the waiter", true],
+                ["das Wasser", "the water", true], ["das Brot", "the bread", true], ["die Gabel", "the fork", true],
+                ["das Messer", "the knife", true], ["das Salz", "the salt", true], ["bestellen", "to order", true],
+                ["lecker", "tasty", true], ["scharf", "spicy", true], ["süß", "sweet", true]
+            ],
+            '🗓️ Tage & Jahreszeiten': [
+                ["der Montag", "Monday", true], ["der Dienstag", "Tuesday", true], ["der Mittwoch", "Wednesday", true],
+                ["der Donnerstag", "Thursday", true], ["der Freitag", "Friday", true], ["der Samstag", "Saturday", true],
+                ["der Sonntag", "Sunday", true], ["der Frühling", "spring", true], ["der Sommer", "summer", true],
+                ["der Herbst", "autumn", true], ["der Winter", "winter", true]
+            ],
+            '➡️ Wichtigste Präpositionen': [
+                ["in", "in", true], ["auf", "on", true], ["unter", "under", true], 
+                ["neben", "next to", true], ["hinter", "behind", true], ["vor", "in front of", true],
+                ["zwischen", "between", true], ["über", "over/above", true], ["mit", "with", true],
+                ["von", "from/of", true], ["zu", "to", true], ["bei", "at/near/with (person)", true]
+            ],
+            '👤 Charakter-Adjektive': [
+                ["freundlich", "friendly", true], ["nett", "nice", true], ["böse", "evil/angry", true],
+                ["mutig", "brave", true], ["ängstlich", "anxious", true], ["fleißig", "diligent", true],
+                ["faul", "lazy", true], ["ehrlich", "honest", true], ["lügnerisch", "lying", true]
+            ],
+            '⏰ Modalverben (Präsens)': [
+                ["ich muss", "I must", true], ["du musst", "you must", true], ["er/sie/es muss", "he/she/it must", true],
+                ["ich kann", "I can", true], ["du kannst", "you can", true], ["er/sie/es kann", "he/she/it can", true],
+                ["ich will", "I want to", true], ["du willst", "you want to", true], ["er/sie/es will", "he/she/it wants to", true]
+            ]
+        };
+
+        // --- 2. HILFSFUNKTIONEN ---
+        
+        /** Erzeugt eine zufällige Zahl zwischen min (inklusive) und max (exklusive). */
+        function zufall(min, max) {
+            return Math.floor(Math.random() * (max - min)) + min;
+        }
+
+        /** Mischt ein Array. */
+        function mischeArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        /** Initialisiert die Set-Liste mit dem ersten vordefinierten Set. */
+        function initSets() {
+            if (Object.keys(alleSets).length === 0) {
+                const defaultName = Object.keys(VORDEFINIERTE_SETS)[0];
+                alleSets[defaultName] = VORDEFINIERTE_SETS[defaultName];
+                
+                aktuellerSetName = defaultName;
+                speichereAlleSets(false); 
+            }
+        }
+        
+        /** Lädt alle Sets aus dem Browser-Speicher. */
+        function ladeAlleSets() {
+            const gespeicherteSets = localStorage.getItem(STORAGE_KEY);
+            if (gespeicherteSets) {
+                try {
+                    alleSets = JSON.parse(gespeicherteSets);
+                } catch (e) {
+                    alleSets = {};
+                }
+            }
+            initSets(); 
+            
+            aktuellerSetName = localStorage.getItem('lastSet') || Object.keys(alleSets)[0];
+            if (!alleSets[aktuellerSetName]) {
+                 aktuellerSetName = Object.keys(alleSets)[0];
+            }
+            
+            ladeAktuellesSet(aktuellerSetName);
+            renderSetSelector();
+            renderBibliothek();
+        }
+
+        /** Speichert alle Sets im Browser-Speicher. */
+        function speichereAlleSets(showFeedback = true) {
+            alleSets[aktuellerSetName] = aktuellesSet; 
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(alleSets));
+            localStorage.setItem('lastSet', aktuellerSetName);
+            renderSetSelector(); 
+            renderBibliothek(); // Aktualisiere Bibliothek nach dem Speichern
+            
+            if (showFeedback) {
+                const speicherBtn = document.getElementById('editor-speichern');
+                speicherBtn.textContent = 'Gespeichert! ✅';
+                setTimeout(() => { speicherBtn.textContent = 'Änderungen speichern & Set laden'; }, 1500);
+            }
+        }
+
+        /** Lädt ein Set basierend auf dem Namen und füllt trainierbaresSet. */
+        function ladeAktuellesSet(setName) {
+            if (!alleSets[setName]) return;
+            
+            aktuellerSetName = setName;
+            aktuellesSet = JSON.parse(JSON.stringify(alleSets[setName])); 
+            
+            // Filtert die Vokabeln, deren 3. Element (Haken-Status) true ist
+            trainierbaresSet = aktuellesSet.filter(vok => vok[2]);
+            
+            setSelector.value = aktuellerSetName;
+            setNameInput.value = aktuellerSetName;
+            
+            aktuelleVokabelIndex = -1;
+            zeigeNaechsteVokabel();
+        }
+        
+        /** Baut die Dropdown-Liste neu auf. */
+        function renderSetSelector() {
+            setSelector.innerHTML = '';
+            Object.keys(alleSets).forEach(name => {
+                const totalCount = alleSets[name].length;
+                const activeCount = alleSets[name].filter(v => v[2]).length;
+                
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = `${name} (${activeCount} / ${totalCount})`;
+                setSelector.appendChild(option);
+            });
+            setSelector.value = aktuellerSetName;
+        }
+
+        // --- 3. TRAINING LOGIK ---
+        
+        /** Zeigt die nächste Vokabel an (zufällige Auswahl aus trainierbaremSet). */
+        function zeigeNaechsteVokabel() {
+            if (trainierbaresSet.length === 0) {
+                wortAnzeige.textContent = "Keine Vokabeln ausgewählt oder Set leer!";
+                uebersetzungAnzeige.classList.add('verborgen');
+                return;
+            }
+            
+            const index = zufall(0, trainierbaresSet.length);
+            const [fremdwort, uebersetzung] = trainierbaresSet[index];
+            
+            aktuelleVokabelIndex = index;
+            
+            wortAnzeige.textContent = fremdwort;
+            uebersetzungAnzeige.textContent = uebersetzung;
+            uebersetzungAnzeige.classList.add('verborgen');
+            wortAnzeige.style.color = 'var(--primary-color)';
+
+            if (aktuellerModus === 1) { 
+                zeigenButton.classList.remove('verborgen');
+                feedbackButtons.classList.add('verborgen');
+            } else if (aktuellerModus === 2) {
+                eingabefeld.value = '';
+                eingabefeld.disabled = false;
+                pruefErgebnis.textContent = '';
+                pruefErgebnis.className = 'ergebnis';
+                ueberpruefenButton.classList.remove('verborgen');
+                naechsteVokabelButton.classList.add('verborgen');
+                eingabefeld.focus();
+            } else if (aktuellerModus === 4) { 
+                zeigeQuizFrage(trainierbaresSet[index]);
+            }
+        }
+
+        // --- Modus 4: Quiz Logik ---
+        function zeigeQuizFrage(korrekteVokabel) {
+            const [fremdwort, korrekteUebersetzung] = korrekteVokabel;
+            quizFrageWort.textContent = `Was ist die richtige Übersetzung für: ${fremdwort}?`;
+            quizFragenContainer.innerHTML = '';
+            quizNaechsteButton.classList.add('verborgen');
+            quizPruefErgebnis.textContent = '';
+            quizPruefErgebnis.className = 'ergebnis';
+            
+            let falscheAntworten = [];
+            const alleUebersetzungen = trainierbaresSet.map(v => v[1]);
+            
+            while (falscheAntworten.length < 3) {
+                if (alleUebersetzungen.length < 2) break;
+                
+                const zufallUebersetzung = alleUebersetzungen[zufall(0, alleUebersetzungen.length)];
+                
+                if (zufallUebersetzung !== korrekteUebersetzung && !falscheAntworten.includes(zufallUebersetzung)) {
+                    falscheAntworten.push(zufallUebersetzung);
+                }
+                
+                if (falscheAntworten.length === trainierbaresSet.length - 1) break; 
+            }
+
+            let optionen = [korrekteUebersetzung, ...falscheAntworten].slice(0, 4);
+            optionen = mischeArray(optionen);
+            
+            optionen.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'quiz-option-button';
+                btn.textContent = option;
+                btn.dataset.antwort = option;
+                
+                btn.addEventListener('click', (e) => pruefeQuizAntwort(e.target, korrekteUebersetzung));
+                quizFragenContainer.appendChild(btn);
+            });
+        }
+        
+        function pruefeQuizAntwort(geklickterButton, korrekteAntwort) {
+            const ausgewaehlteAntwort = geklickterButton.dataset.antwort;
+            const alleButtons = quizFragenContainer.querySelectorAll('.quiz-option-button');
+
+            alleButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.dataset.antwort === korrekteAntwort) {
+                    btn.classList.add('correct');
+                } else if (btn === geklickterButton) {
+                    btn.classList.add('wrong');
+                }
+            });
+
+            if (ausgewaehlteAntwort === korrekteAntwort) {
+                quizPruefErgebnis.textContent = 'Richtig! 🎉';
+                quizPruefErgebnis.className = 'ergebnis richtig';
+            } else {
+                quizPruefErgebnis.textContent = `Falsch. Korrekt: ${korrekteAntwort} ❌`;
+                quizPruefErgebnis.className = 'ergebnis falsch';
+            }
+            
+            quizNaechsteButton.classList.remove('verborgen');
+        }
+
+        // --- 4. EDITOR & BIBLIOTHEK LOGIK ---
+        
+        /** Baut die Vokabelliste im Editor-Modus auf. */
+        function renderEditorListe() {
+            vokabelListe.innerHTML = '';
+            
+            aktuellesSet.forEach((vok, index) => {
+                const [fremdwort, uebersetzung, selected] = vok;
+                
+                const div = document.createElement('div');
+                div.className = 'vokabel-eintrag';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = selected;
+                checkbox.addEventListener('change', (e) => {
+                    aktuellesSet[index][2] = e.target.checked;
+                });
+
+                const inputFremd = document.createElement('input');
+                inputFremd.type = 'text';
+                inputFremd.value = fremdwort;
+                inputFremd.placeholder = 'Fremdwort';
+                inputFremd.addEventListener('input', (e) => aktuellesSet[index][0] = e.target.value); 
+
+                const inputUebersetzung = document.createElement('input');
+                inputUebersetzung.type = 'text';
+                inputUebersetzung.value = uebersetzung;
+                inputUebersetzung.placeholder = 'Übersetzung';
+                inputUebersetzung.addEventListener('input', (e) => aktuellesSet[index][1] = e.target.value); 
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = '✖';
+                deleteButton.addEventListener('click', () => {
+                    aktuellesSet.splice(index, 1);
+                    renderEditorListe(); 
+                });
+
+                div.appendChild(checkbox);
+                div.appendChild(inputFremd);
+                div.appendChild(inputUebersetzung);
+                div.appendChild(deleteButton);
+                vokabelListe.appendChild(div);
+            });
+        }
+
+        /** Erstellt die Liste der Sets, die zur Bibliothek hinzugefügt werden können. */
+        function renderBibliothek() {
+            setBibliothekContainer.innerHTML = '';
+            
+            Object.keys(VORDEFINIERTE_SETS).forEach(setName => {
+                const totalCount = VORDEFINIERTE_SETS[setName].length;
+
+                const div = document.createElement('div');
+                div.className = 'bibliothek-set-item';
+                
+                const infoSpan = document.createElement('span');
+                infoSpan.textContent = `${setName} (${totalCount} Vokabeln)`;
+                div.appendChild(infoSpan);
+
+                const addButton = document.createElement('button');
+                const alreadyExists = !!alleSets[setName];
+                addButton.textContent = alreadyExists ? 'Bereits hinzugefügt' : '➕ Hinzufügen';
+                addButton.disabled = alreadyExists;
+                addButton.className = alreadyExists ? 'wechsel-button' : 'gut'; // Farbe anpassen
+                
+                addButton.addEventListener('click', () => {
+                    alleSets[setName] = JSON.parse(JSON.stringify(VORDEFINIERTE_SETS[setName])); // Tiefe Kopie
+                    aktuellerSetName = setName;
+                    speichereAlleSets(false);
+                    ladeAktuellesSet(aktuellerSetName);
+                    wechsleModus(1); 
+                });
+
+                div.appendChild(addButton);
+                setBibliothekContainer.appendChild(div);
+            });
+        }
+        
+        // --- 5. MODUSWECHSEL ---
+        
+        /** Wechselt zwischen den Modi (1, 2, 3, 4). */
+        function wechsleModus(neuerModus) {
+            
+            modus1.classList.toggle('verborgen', neuerModus !== 1);
+            modus2.classList.toggle('verborgen', neuerModus !== 2);
+            editorModus.classList.toggle('verborgen', neuerModus !== 3);
+            modus4.classList.toggle('verborgen', neuerModus !== 4);
+            
+            const isTraining = (neuerModus === 1 || neuerModus === 2 || neuerModus === 4);
+            document.getElementById('vokabel-container').classList.toggle('verborgen', !isTraining);
+            document.getElementById('set-auswahl-container').classList.toggle('verborgen', neuerModus === 3);
+
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.toggle('aktiv', parseInt(btn.dataset.modus) === neuerModus);
+            });
+            
+            if (neuerModus === 3) {
+                ladeAktuellesSet(aktuellerSetName); 
+                setNameInput.value = aktuellerSetName;
+                renderEditorListe();
+                renderBibliothek(); 
+            } else if (neuerModus !== aktuellerModus) {
+                ladeAktuellesSet(aktuellerSetName); 
+                zeigeNaechsteVokabel(); 
+            }
+            
+            aktuellerModus = neuerModus;
+        }
+
+        // --- 6. EVENT LISTENER ---
+        
+        // Set-Wechsel
+        document.getElementById('set-selector').addEventListener('change', (e) => {
+            ladeAktuellesSet(e.target.value);
+            wechsleModus(1);
+        });
+
+        // Neues Set erstellen
+        document.getElementById('set-neu-button').addEventListener('click', () => {
+            const tempName = 'Neues Set ' + Date.now().toString().slice(-4);
+            alleSets[tempName] = [
+                ["Fremdwort", "Übersetzung", true], 
+                ["", "", true]
+            ]; 
+            
+            aktuellerSetName = tempName;
+            speichereAlleSets(false); 
+            ladeAktuellesSet(aktuellerSetName); 
+            
+            wechsleModus(3);
+            setNameInput.select(); 
+        });
+        
+        // Editor Speichern & Umbenennen
+        document.getElementById('editor-speichern').addEventListener('click', () => {
+            const neuerName = setNameInput.value.trim();
+            
+            if (!neuerName) {
+                alert("Der Set-Name darf nicht leer sein!");
+                return;
+            }
+
+            if (neuerName !== aktuellerSetName) {
+                if (alleSets[neuerName]) {
+                    alert(`Ein Set mit dem Namen "${neuerName}" existiert bereits.`);
+                    return;
+                }
+                alleSets[neuerName] = aktuellesSet; 
+                delete alleSets[aktuellerSetName]; 
+                aktuellerSetName = neuerName;
+            }
+            
+            aktuellesSet = aktuellesSet.filter(vok => vok[0].trim() !== "" || vok[1].trim() !== "");
+            
+            speichereAlleSets();
+            ladeAktuellesSet(aktuellerSetName); 
+            wechsleModus(1); 
+        });
+
+        document.getElementById('loesche-set-button').addEventListener('click', () => {
+            if (Object.keys(alleSets).length <= 1) {
+                alert("Sie können das letzte Set nicht löschen!");
+                return;
+            }
+            if (confirm(`Sind Sie sicher, dass Sie das Set "${aktuellerSetName}" löschen möchten?`)) {
+                delete alleSets[aktuellerSetName];
+                aktuellerSetName = Object.keys(alleSets)[0]; 
+                speichereAlleSets(false);
+                ladeAktuellesSet(aktuellerSetName);
+                wechsleModus(1); 
+            }
+        });
+
+        // Editor-Vokabel-Events
+        document.getElementById('neue-vokabel-button').addEventListener('click', () => {
+            aktuellesSet.push(["", "", true]);
+            renderEditorListe();
+        });
+
+        // Tab-Wechsel Events
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                wechsleModus(parseInt(btn.dataset.modus));
+            });
+        });
+        
+        // Training Events (Modus 1, 2, 4)
+        zeigenButton.addEventListener('click', () => {
+            uebersetzungAnzeige.classList.remove('verborgen');
+            zeigenButton.classList.add('verborgen');
+            feedbackButtons.classList.remove('verborgen');
+            wortAnzeige.style.color = 'var(--success-color)';
+        });
+        document.getElementById('wusste-ich-button').addEventListener('click', () => zeigeNaechsteVokabel());
+        document.getElementById('wusste-nicht-button').addEventListener('click', () => zeigeNaechsteVokabel());
+        
+        document.getElementById('ueberpruefen-button').addEventListener('click', () => {
+            if (trainierbaresSet.length === 0) return;
+            const korrekteAntwort = trainierbaresSet[aktuelleVokabelIndex][1].trim(); 
+            const eingegebeneAntwort = eingabefeld.value.trim();
+            
+            if (eingegebeneAntwort === korrekteAntwort) {
+                pruefErgebnis.textContent = 'Richtig! 🎉';
+                pruefErgebnis.className = 'ergebnis richtig';
+            } else {
+                pruefErgebnis.textContent = `Falsch. Korrekt: "${korrekteAntwort}" ❌`;
+                pruefErgebnis.className = 'ergebnis falsch';
+            }
+
+            eingabefeld.disabled = true;
+            ueberpruefenButton.classList.add('verborgen');
+            naechsteVokabelButton.classList.remove('verborgen');
+        });
+        eingabefeld.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !eingabefeld.disabled) {
+                document.getElementById('ueberpruefen-button').click();
+            }
+        });
+        document.getElementById('naechste-vokabel-button').addEventListener('click', () => zeigeNaechsteVokabel());
+        quizNaechsteButton.addEventListener('click', () => zeigeNaechsteVokabel());
+
+
+        // 7. Initialisierung
+        document.addEventListener('DOMContentLoaded', () => {
+            ladeAlleSets(); 
+            wechsleModus(1); 
+        });
+    </script>
+</body>
+</html>
