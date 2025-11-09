@@ -21,6 +21,69 @@ header {
     height: 200px;
     margin-bottom: 20px;
 }
+/* --- Set Selection Styling --- */
+#set-selection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 25px;
+    width: 300px;
+}
+
+#set-selection h2 {
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+#set-select, #add-set-btn {
+    padding: 10px;
+    margin: 5px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 1em;
+}
+
+#add-set-btn {
+    background-color: #3498db;
+    color: white;
+    cursor: pointer;
+}
+
+#add-set-btn:hover {
+    background-color: #2980b9;
+}
+
+/* --- Card Delete Button Styling --- */
+#card-container {
+    position: relative; /* Wichtig für die Positionierung des Buttons */
+}
+
+#delete-card-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 5px 8px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.8em;
+    z-index: 10;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+#delete-card-btn:hover:not(:disabled) {
+    opacity: 1;
+    background-color: #c0392b;
+}
+
+#delete-card-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
 /* Zusätzliche Regel für Bilder auf der Vorderseite (wenn das Bild die Frage ist) */
 .front-image {
     max-width: 100%;
